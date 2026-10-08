@@ -8,7 +8,7 @@ on:
 jobs:
   update-data:
     runs-on: ubuntu-latest
-    permissions: write-all # ◀ これを追加して強制的に書き込み権限を許可します
+    permissions: write-all
     steps:
     - name: コードをチェックアウト
       uses: actions/checkout@v4
@@ -28,5 +28,5 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add marine_data.json
+        git add -A # ◀ フォルダ内の変更をすべて自動で探し出します
         git diff --cached --quiet || (git commit -m "最新の気象データに更新" && git push)
