@@ -28,5 +28,5 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add -A # ◀ フォルダ内の変更をすべて自動で探し出します
-        git diff --cached --quiet || (git commit -m "最新の気象データに更新" && git push)
+        git commit -am "最新の気象データに更新" || exit 0
+        git push
