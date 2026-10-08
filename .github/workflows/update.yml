@@ -8,6 +8,7 @@ on:
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    permissions: write-all # ◀ これを追加して強制的に書き込み権限を許可します
     steps:
     - name: コードをチェックアウト
       uses: actions/checkout@v4
