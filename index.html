@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>糸魚川海天気ビューア</title>
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <style>
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
+        #map { width: 100%; height: 75vh; }
+        #controls { height: 25vh; background: #222; color: #fff; padding: 15px; box-sizing: border-box; text-align: center; }
+        #time-display { font-size: 1.1rem; margin-bottom: 10px; font-weight: bold; color: #00ffcc; }
+        #seekbar { width: 90%; height: 20px; margin: 10px 0; }
+        .btn-group { display: flex; justify-content: center; gap: 20px; margin-top: 5px; }
+        button { padding: 12px 30px; font-size: 1rem; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+        #play-btn { background: #28a745; color: white; }
+        #pause-btn { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+    <div id="controls">
+        <div id="time-display">時刻: 読み込み中...</div>
+        <input type="range" id="seekbar" min="0" max="47" value="0">
+        <div class="btn-group">
+            <button id="play-btn">再生</button>
+            <button id="pause-btn">停止</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com"></script>
+    <script>
+        const map = L.map('map', { zoomControl: false }).setView([37.15, 137.85], 11);
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let marineData = null;
+        let dataLayers = L.layerGroup().addTo(map);
+        let timer = null;
+
+        fetch('marine_data.json?nocache=' + new Date().getTime())
+            .then(res => res.json())
+            .then(data => {
+                marineData = data;
+                updateMap(0);
+            })
+            .catch(err => {
+                document.getElementById('time-display').innerText = "データ自動生成中...しばらくお待ちください";
+            });
+
+        function updateMap(index) {
+            if (!marineData) return;
+            dataLayers.clearLayers();
+
+            const hourly = marineData.hourly;
+            const timeStr = hourly.time[index];
+            
+            const dateObj = new Date(timeStr);
+            const formattedTime = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:00`;
+            document.getElementById('time-display').innerText = `予測: ${formattedTime}`;
+
+            const lat = marineData.latitude;
+            const lon = marineData.longitude;
+            const waveHeight = hourly.wave_height[index];
+
+            let color = '#007bff';
+            if (waveHeight > 2.0) color = '#ff3333';
+            else if (waveHeight > 1.0) color = '#ff9900';
+
+            const marker = L.circleMarker([lat, lon], {
+                radius: 25 + (waveHeight * 8),
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.6,
+                weight: 2
+            }).addTo(dataLayers);
+
+            marker.bindPopup(`<b>糸魚川沖</b><br>波高: ${waveHeight}m`).openPopup();
+        }
+
+        const seekbar = document.getElementById('seekbar');
+        seekbar.addEventListener('input', (e) => {
+            updateMap(parseInt(e.target.value));
+        });
+
+        document.getElementById('play-btn').addEventListener('click', () => {
+            if (timer) return;
+            timer = setInterval(() => {
+                let current = parseInt(seekbar.value);
+                current = (current + 1) % 48;
+                seekbar.value = current;
+                updateMap(current);
+            }, 800);
+        });
+
+        document.getElementById('pause-btn').addEventListener('click', () => {
+            clearInterval(timer);
+            timer = null;
+        });
+    </script>
+</body>
+</html>
