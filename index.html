@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>糸魚川海天気ビューア</title>
-    <!-- 地図のプログラムを確実に読み込むための設定 -->
-    <link rel="stylesheet" href="https://esm.sh" />
+    <!-- 地図のプログラムを最も安定した配信サイトから読み込み -->
+    <link rel="stylesheet" href="https://cloudflare.com" />
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #222; }
-        /* 地図エリア（真っ白対策として背景色をグレーに設定） */
+        /* 地図エリア（真っ白対策として背景色をあらかじめグレーに設定） */
         #map { width: 100%; height: 70vh; background: #ddd; }
         /* 操作パネル */
         #controls { height: 30vh; background: #111; color: #fff; padding: 15px; box-sizing: border-box; text-align: center; }
@@ -32,28 +32,32 @@
         </div>
     </div>
 
-    <!-- 地図のプログラムを別の安定したサーバーから読み込み -->
-    <script src="https://esm.sh"></script>
+    <!-- 地図のプログラムの本体を読み込み -->
+    <script src="https://cloudflare.com"></script>
     <script>
-        // 地図の初期化
+        // 地図の初期化（糸魚川沖）
         const map = L.map('map', { zoomControl: false }).setView([37.22, 137.86], 11);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // 地図の画像を国土地理院の超安定サーバーに変更（ブロック対策）
-        L.tileLayer('https://gsi.go.jp{z}/{x}/{y}.png', {
-            attribution: '<a href="https://gsi.go.jp" target="_blank">国土地理院</a>'
+        // 世界標準のオープンストリートマップに切り替え（確実性を最優先）
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
         let marineData = null;
         let dataLayers = L.layerGroup().addTo(map);
         let timer = null;
 
-        // データの読み込み（現在のフォルダから確実に引っ張る設定）
-        const jsonPath = 'marine_data.json?t=' + new Date().getTime();
+        // 【ここを修正】自分自身のURLから確実にデータを引っ張る仕組みに強制変更
+        const currentUrl = window.location.href.split('?')[0].split('#')[0];
+        const baseUrl = currentUrl.endsWith('/') ? currentUrl : currentUrl + '/';
+        const jsonPath = baseUrl + 'marine_data.json?t=' + new Date().getTime();
+
+        console.log("データ読み込み先: " + jsonPath);
 
         fetch(jsonPath)
             .then(res => {
-                if (!res.ok) throw new Error('データファイル（marine_data.json）が倉庫に存在しないか、読み込めません。');
+                if (!res.ok) throw new Error('通信エラー: ' + res.status);
                 return res.json();
             })
             .then(data => {
@@ -61,11 +65,11 @@
                     marineData = data;
                     updateMap(0);
                 } else {
-                    document.getElementById('time-display').innerText = "データの形が正しくありません";
+                    document.getElementById('time-display').innerText = "データの形が違います";
                 }
             })
             .catch(err => {
-                document.getElementById('time-display').innerText = "エラー: データの自動生成を待っています...";
+                document.getElementById('time-display').innerText = "データの読み込みをお待ちください...";
                 console.error(err);
             });
 
@@ -76,7 +80,7 @@
             const hourly = marineData.hourly;
             const timeStr = hourly.time[index];
             
-            // 日本時間に変換して分かりやすく表示
+            // 日時を日本の見やすい表記に変換
             const dateObj = new Date(timeStr);
             const formattedTime = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:00`;
             document.getElementById('time-display').innerText = `予測日時: ${formattedTime}`;
@@ -85,6 +89,7 @@
             const lon = 137.86;
             const waveHeight = hourly.wave_height[index];
 
+            // 波の高さで色を変える
             let color = '#007bff';
             if (waveHeight > 2.0) color = '#ff3333';
             else if (waveHeight > 1.0) color = '#ff9900';
