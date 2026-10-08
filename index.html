@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>糸魚川海天気ビューア</title>
-    <!-- 地図のプログラムを最も安定した配信サイトから読み込み -->
+    <!-- 地図のスタイルシートを読み込み -->
     <link rel="stylesheet" href="https://cloudflare.com" />
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #222; }
-        /* 地図エリア（真っ白対策として背景色をあらかじめグレーに設定） */
         #map { width: 100%; height: 70vh; background: #ddd; }
-        /* 操作パネル */
         #controls { height: 30vh; background: #111; color: #fff; padding: 15px; box-sizing: border-box; text-align: center; }
         #time-display { font-size: 1.2rem; margin-bottom: 8px; font-weight: bold; color: #00ffcc; min-height: 24px; }
         #seekbar { width: 90%; height: 30px; margin: 10px 0; }
@@ -32,14 +30,14 @@
         </div>
     </div>
 
-    <!-- 地図のプログラムの本体を読み込み -->
+    <!-- 地図のプログラム本体を読み込み -->
     <script src="https://cloudflare.com"></script>
     <script>
-        // 地図の初期化（糸魚川沖）
+        // 1. 地図の初期化（糸魚川沖）
         const map = L.map('map', { zoomControl: false }).setView([37.22, 137.86], 11);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        // 世界標準のオープンストリートマップに切り替え（確実性を最優先）
+        // 2. 地図の背景タイル（OpenStreetMap）を設置
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
@@ -48,39 +46,36 @@
         let dataLayers = L.layerGroup().addTo(map);
         let timer = null;
 
-        // 【ここを修正】自分自身のURLから確実にデータを引っ張る仕組みに強制変更
-        const currentUrl = window.location.href.split('?')[0].split('#')[0];
-        const baseUrl = currentUrl.endsWith('/') ? currentUrl : currentUrl + '/';
-        const jsonPath = baseUrl + 'marine_data.json?t=' + new Date().getTime();
-
-        console.log("データ読み込み先: " + jsonPath);
+        // 3. データの読み込み（最も単純で確実な相対パス指定に修正）
+        const jsonPath = './marine_data.json?t=' + new Date().getTime();
 
         fetch(jsonPath)
             .then(res => {
-                if (!res.ok) throw new Error('通信エラー: ' + res.status);
+                if (!res.ok) throw new Error('通信エラー status: ' + res.status);
                 return res.json();
             })
             .then(data => {
                 if (data && data.hourly && data.hourly.time) {
                     marineData = data;
-                    updateMap(0);
+                    updateMap(0); // 最初の時間を描画
                 } else {
                     document.getElementById('time-display').innerText = "データの形が違います";
                 }
             })
             .catch(err => {
-                document.getElementById('time-display').innerText = "データの読み込みをお待ちください...";
+                document.getElementById('time-display').innerText = "データの読み込みに失敗しました";
                 console.error(err);
             });
 
+        // 4. 地図上の波マークを更新する関数
         function updateMap(index) {
             if (!marineData) return;
-            dataLayers.clearLayers();
+            dataLayers.clearLayers(); // 古いマークを消去
 
             const hourly = marineData.hourly;
             const timeStr = hourly.time[index];
             
-            // 日時を日本の見やすい表記に変換
+            // 日本時間に見やすく変換
             const dateObj = new Date(timeStr);
             const formattedTime = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:00`;
             document.getElementById('time-display').innerText = `予測日時: ${formattedTime}`;
@@ -89,7 +84,7 @@
             const lon = 137.86;
             const waveHeight = hourly.wave_height[index];
 
-            // 波の高さで色を変える
+            // 波の高さで色を変える（青 ＞ オレンジ ＞ 赤）
             let color = '#007bff';
             if (waveHeight > 2.0) color = '#ff3333';
             else if (waveHeight > 1.0) color = '#ff9900';
@@ -105,11 +100,13 @@
             marker.bindPopup(`<b>糸魚川沖</b><br>波の高さ: ${waveHeight}m`).openPopup();
         }
 
+        // 5. シークバーの連動
         const seekbar = document.getElementById('seekbar');
         seekbar.addEventListener('input', (e) => {
             updateMap(parseInt(e.target.value));
         });
 
+        // 6. 再生・停止ボタンの連動
         document.getElementById('play-btn').addEventListener('click', () => {
             if (timer) return;
             timer = setInterval(() => {
