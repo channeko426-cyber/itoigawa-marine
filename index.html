@@ -4,24 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>糸魚川海天気ビューア</title>
-    <link rel="stylesheet" href="https://unpkg.com" />
+    <!-- 地図のプログラムを確実に読み込むための設定 -->
+    <link rel="stylesheet" href="https://esm.sh" />
     <style>
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; }
-        #map { width: 100%; height: 75vh; }
-        #controls { height: 25vh; background: #222; color: #fff; padding: 15px; box-sizing: border-box; text-align: center; }
-        #time-display { font-size: 1.1rem; margin-bottom: 10px; font-weight: bold; color: #00ffcc; }
-        #seekbar { width: 90%; height: 20px; margin: 10px 0; }
-        .btn-group { display: flex; justify-content: center; gap: 20px; margin-top: 5px; }
-        button { padding: 12px 30px; font-size: 1rem; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
-        #play-btn { background: #28a745; color: white; }
-        #pause-btn { background: #dc3545; color: white; }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #222; }
+        /* 地図エリア（真っ白対策として背景色をグレーに設定） */
+        #map { width: 100%; height: 70vh; background: #ddd; }
+        /* 操作パネル */
+        #controls { height: 30vh; background: #111; color: #fff; padding: 15px; box-sizing: border-box; text-align: center; }
+        #time-display { font-size: 1.2rem; margin-bottom: 8px; font-weight: bold; color: #00ffcc; min-height: 24px; }
+        #seekbar { width: 90%; height: 30px; margin: 10px 0; }
+        .btn-group { display: flex; justify-content: center; gap: 20px; margin-top: 10px; }
+        button { padding: 15px 35px; font-size: 1.1rem; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; }
+        #play-btn { background: #28a745; }
+        #pause-btn { background: #dc3545; }
     </style>
 </head>
 <body>
 
     <div id="map"></div>
     <div id="controls">
-        <div id="time-display">時刻: 読み込み中...</div>
+        <div id="time-display">地図とデータを読み込み中...</div>
         <input type="range" id="seekbar" min="0" max="47" value="0">
         <div class="btn-group">
             <button id="play-btn">再生</button>
@@ -29,27 +32,41 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com"></script>
+    <!-- 地図のプログラムを別の安定したサーバーから読み込み -->
+    <script src="https://esm.sh"></script>
     <script>
-        const map = L.map('map', { zoomControl: false }).setView([37.15, 137.85], 11);
+        // 地図の初期化
+        const map = L.map('map', { zoomControl: false }).setView([37.22, 137.86], 11);
         L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
+        // 地図の画像を国土地理院の超安定サーバーに変更（ブロック対策）
+        L.tileLayer('https://gsi.go.jp{z}/{x}/{y}.png', {
+            attribution: '<a href="https://gsi.go.jp" target="_blank">国土地理院</a>'
         }).addTo(map);
 
         let marineData = null;
         let dataLayers = L.layerGroup().addTo(map);
         let timer = null;
 
-        fetch('marine_data.json?nocache=' + new Date().getTime())
-            .then(res => res.json())
+        // データの読み込み（現在のフォルダから確実に引っ張る設定）
+        const jsonPath = 'marine_data.json?t=' + new Date().getTime();
+
+        fetch(jsonPath)
+            .then(res => {
+                if (!res.ok) throw new Error('データファイル（marine_data.json）が倉庫に存在しないか、読み込めません。');
+                return res.json();
+            })
             .then(data => {
-                marineData = data;
-                updateMap(0);
+                if (data && data.hourly && data.hourly.time) {
+                    marineData = data;
+                    updateMap(0);
+                } else {
+                    document.getElementById('time-display').innerText = "データの形が正しくありません";
+                }
             })
             .catch(err => {
-                document.getElementById('time-display').innerText = "データ自動生成中...しばらくお待ちください";
+                document.getElementById('time-display').innerText = "エラー: データの自動生成を待っています...";
+                console.error(err);
             });
 
         function updateMap(index) {
@@ -59,12 +76,13 @@
             const hourly = marineData.hourly;
             const timeStr = hourly.time[index];
             
+            // 日本時間に変換して分かりやすく表示
             const dateObj = new Date(timeStr);
             const formattedTime = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:00`;
-            document.getElementById('time-display').innerText = `予測: ${formattedTime}`;
+            document.getElementById('time-display').innerText = `予測日時: ${formattedTime}`;
 
-            const lat = marineData.latitude;
-            const lon = marineData.longitude;
+            const lat = 37.22;
+            const lon = 137.86;
             const waveHeight = hourly.wave_height[index];
 
             let color = '#007bff';
@@ -79,7 +97,7 @@
                 weight: 2
             }).addTo(dataLayers);
 
-            marker.bindPopup(`<b>糸魚川沖</b><br>波高: ${waveHeight}m`).openPopup();
+            marker.bindPopup(`<b>糸魚川沖</b><br>波の高さ: ${waveHeight}m`).openPopup();
         }
 
         const seekbar = document.getElementById('seekbar');
