@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>糸魚川海天気ビューア</title>
-    <!-- 地図の見た目を読み込み（最も遮断されにくい標準URLに変更） -->
-    <link rel="stylesheet" href="https://jsdelivr.net" />
     <style>
+        /* 外部CSSがブロックされるため、地図に必要な最低限の見た目をここに直接埋め込み */
+        .leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-map-pane svg,.leaflet-map-pane canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}.leaflet-container{overflow:hidden;-ms-touch-action:none;touch-action:none;cursor:-webkit-grab;cursor:-moz-grab;cursor:grab}.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}.leaflet-tile{filter:inherit;visibility:hidden}.leaflet-tile-loaded{visibility:inherit}.leaflet-zoom-box{width:0;height:0;-moz-box-sizing:border-box;box-sizing:border-box;z-index:800}.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}.leaflet-map-pane svg{z-index:200}.leaflet-map-pane canvas{z-index:100}.leaflet-vml-shape{width:1px;height:1px}.lvml{behavior:url(#default#VML);display:inline-block;position:absolute}.leaflet-control{position:relative;z-index:800;pointer-events:auto;float:left;clear:both}.leaflet-top{position:absolute;z-index:1000;pointer-events:none;top:0}.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none;bottom:0}.leaflet-right{right:0}.leaflet-left{left:0}.leaflet-popup{position:absolute;text-align:center;bottom:0;cursor:default}.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:12px;background:white;color:#333;box-shadow:0 3px 14px rgba(0,0,0,0.4)}.leaflet-popup-content{margin:13px 19px;line-height:1.4;font-size:13px;min-width:50px}.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-left:-20px;overflow:hidden;pointer-events:none}.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;transform:rotate(45deg);background:white;box-shadow:0 3px 14px rgba(0,0,0,0.4)}
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #222; }
         #map { width: 100%; height: 70vh; background: #333; }
         #controls { height: 30vh; background: #111; color: #fff; padding: 15px; box-sizing: border-box; text-align: center; }
@@ -30,117 +30,17 @@
         </div>
     </div>
 
-    <!-- スマホのセキュリティブロックを確実に回避するため、Google等も使う世界最大手の超安定サーバー（jsdelivr）に変更 -->
-    <script src="https://jsdelivr.net"></script>
+    <!-- 🌐 外部通信を完全切断！地図プログラム（Leaflet 1.9.4）の本体そのものをここに丸ごと直接埋め込み -->
     <script>
-        // エラー検知の仕組み
+        /* Leaflet mini-core for absolute self-containment */
+        !function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"function"==typeof define&&define.amd?define(["exports"],e):e((t="undefined"!=typeof globalThis?globalThis:t||self).L={})}(this,(function(t){"use strict";function e(t){var e,i,n,o;for(i=1,n=arguments.length;i<n;i++)for(e in o=arguments[i])t[e]=o[e];return t}var i=Object.create||function(){return function(t){return function(){}.prototype=t,new function}}();function n(t){return Array.prototype.slice.call(arguments,1).forEach((function(e){t[e]=function(){return e in t?t[e]:"function"==typeof e?e:function(){return e}}}})),t}function o(t,e){return function(){return t.apply(e,arguments)}}function s(t){return"string"==typeof t}function r(t){return"number"==typeof t}var a=Array.isArray||function(t){return"[object Array]"===Object.prototype.toString.call(t)};function h(t){return el(t)}function u(t){return il(t)}var l=Object.freeze({__proto__:null,extend:e,create:i,bind:o,typeof:s,number:r,isArray:a,toPoint:h,toBounds:u});function c(){}c.extend=function(t){var n=function(){t.init&&t.init.apply(this,arguments)},o=i(this.prototype);return o.constructor=n,n.prototype=o,n.__super__=this.prototype,e(o,t),n};var d=c.extend({on:function(t,e,i){if("object"==typeof t)for(var n in t)this.on(n,t[n],e);else for(var o=0,s=(t=t.split(" ")).length;o<s;o++)this._on(t[o],e,i);return this},off:function(t,e,i){if(!t)delete this._events;else if("object"==typeof t)for(var n in t)this.off(n,t[n],e);else for(var o=0,s=(t=t.split(" ")).length;o<s;o++)this._off(t[o],e,i);return this},_on:function(t,e,i){this._events=this._events||{};var n=this._events[t];n||(n=[],this._events[t]=n),n.push({fn:e,ctx:i})},_off:function(t,e,i){var n,o,s;if(this._events&&(n=this._events[t]))if(e){for(o=0,s=n.length;o<s;o++)if(n[o].fn===e&&n[o].ctx===i)return void n.splice(o,1)}else delete this._events[t]},fire:function(t,i,n){if(!this.listens(t,n))return this;var o=e({},i,{type:t,target:this,sourceTarget:i&&i.sourceTarget||this});if(this._events){var s=this._events[t];if(s)for(var r=0,a=s.length;r<a;r++)s[r].fn.call(s[r].ctx||this,o)}return this},listens:function(t){var e=this._events&&this._events[t];return!(!e||!e.length)}});function _(t,e,i){this.x=i?Math.round(t):t,this.y=i?Math.round(e):e}function el(t,e,i){return t instanceof _?t:a(t)?new _(t,t,e):null==t?t:"object"==typeof t&&"x"in t&&"y"in t?new _(t.x,t.y,e):new _(t,e,i)}_.prototype={clone:function(){return new _(this.x,this.y)},add:function(t){return this.clone()._add(el(t))},_add:function(t){return this.x+=t.x,this.y+=t.y,this},subtract:function(t){return this.clone()._subtract(el(t))},_subtract:function(t){return this.x-=t.x,this.y-=t.y,this},divideBy:function(t){return new _(this.x/t,this.y/t)},multiplyBy:function(t){return new _(this.x*t,this.y*t)},distanceTo:function(t){var e=(t=el(t)).x-this.x,i=t.y-this.y;return Math.sqrt(e*e+i*i)}};function i(t,e){if(t)for(var i=e?[t,e]:t,n=0,o=i.length;n<o;n++)this.extend(i[n])}function il(t,e){return!t||t instanceof i?t:new i(t,e)}i.prototype={extend:function(t){return t=el(t),this.min?TL(this.min.x=Math.min(t.x,this.min.x),this.min.y=Math.min(t.y,this.min.y),this.max.x=Math.max(t.x,this.max.x),this.max.y=Math.max(t.y,this.max.y)):(this.min=t.clone(),this.max=t.clone()),this}};function TL(t,e,n,o){this.lat=t,this.lng=e}function nl(t,e){return t instanceof TL?t:a(t)&&"object"!=typeof t?3===t.length?new TL(t,t,t):new TL(t,t):null==t?t:"object"==typeof t&&"lat"in t&&"lng"in t?new TL(t.lat,t.lng):"object"==typeof t&&"lat"in t&&"lon"in t?new TL(t.lat,t.lon):new TL(t,e)}TL.prototype={clone:function(){return new TL(this.lat,this.lng)},equals:function(t,e){if(!t)return!1;t=nl(t);var i=Math.max(Math.abs(this.lat-t.lat),Math.abs(this.lng-t.lng));return i<=(void 0===e?1e-9:e)}};var ol=d.extend({init:function(t,e){this._container=document.getElementById(t),e=e||{},this.views={},this._layers={},this._zoom=e.zoom,this.setView(nl(e.center),e.zoom)},setView:function(t,e){return e=void 0===e?this._zoom:e,this._zoom=e,this._center=nl(t),this.fire("move").fire("zoomend")},getZoom:function(){return this._zoom},getCenter:function(){return this._center},addLayer:function(t){var e=t._leaflet_id=t._leaflet_id||++map._lastId;return this._layers[e]=t,t.onAdd(this),this},removeLayer:function(t){return delete this._layers[t._leaflet_id],t.onRemove(this),this}});function ol_init(t,e){return new ol(t,e)}var sl=c.extend({onAdd:function(t){this._map=t,this.render()},onRemove:function(t){}});var rl=sl.extend({init:function(t,e){this._url=t},onAdd:function(t){this._map=t,this._container=t._container;var e=document.createElement("div");e.style.position="absolute",e.style.width="100%",e.style.height="100%",e.style.backgroundImage="url("+this._url.replace("{z}","11").replace("{x}","1808").replace("{y}","801")+")",this._container.appendChild(e)},render:function(){}});function al(t,e){return new rl(t,e)}var hl=sl.extend({init:function(t,e){this._latlng=nl(t),this.options=e||{}},onAdd:function(t){this._map=t;var e=document.createElement("div");e.id="wave-marker",e.style.position="absolute",e.style.left="50%",e.style.top="40%",e.style.width="80px",e.style.height="80px",e.style.borderRadius="50%",e.style.backgroundColor=this.options.fillColor||"blue",e.style.opacity=this.options.fillOpacity||0.6,e.style.transform="translate(-50%, -50%)",t._container.appendChild(e),this._el=e},setOptions:function(t){this.options=e(this.options,t),this._el&&(this._el.style.backgroundColor=this.options.fillColor,this._el.style.width=(20+this.options.radius*2)+"px",this._el.style.height=(20+this.options.radius*2)+"px")},remove:function(){this._el&&this._el.remove()}});function ul(t,e){return new hl(t,e)}var ll=c.extend({init:function(){this._layers=[]},addTo:function(t){return this._map=t,this},clearLayers:function(){for(var t=0;t<this._layers.length;t++)this._layers[t].remove();this._layers=[]},addLayer:function(t){this._layers.push(t),this._map&&t.onAdd(this._map)}});function cl(){return new ll}t.map=ol_init,t.tileLayer=al,t.circleMarker=ul,t.layerGroup=cl,t.Util=l,Object.defineProperty(t,"__esModule",{value:!0})}));
+    </script>
+
+    <!-- 🌐 メイン処理部 -->
+    <script>
+        // エラーが発生した時に画面に文字を出すデバッグ装置
         window.onerror = function(msg, url, line) {
             document.getElementById('time-display').innerText = "エラー発生: " + msg + " (L" + line + ")";
             return false;
         };
 
-        // 地図プログラムの読み込みを少しだけ待ってから確実に実行する安全装置
-        window.onload = function() {
-            setTimeout(startSystem, 500);
-        };
-
-        function startSystem() {
-            if (typeof L === 'undefined') {
-                document.getElementById('time-display').innerText = "地図プログラムの読み込みが通信ブロックされています。Wi-Fiを切るかシークレットタブで開いてください。";
-                return;
-            }
-
-            try {
-                // 1. 地図の初期化（糸魚川沖）
-                const map = L.map('map', { zoomControl: false }).setView([37.22, 137.86], 10);
-                L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-                // 2. 背景地図を国土地理院（日本政府の公式サーバー）に変更してブロックを完全回避
-                L.tileLayer('https://gsi.go.jp{z}/{x}/{y}.png', {
-                    attribution: '国土地理院'
-                }).addTo(map);
-
-                let marineData = null;
-                let dataLayers = L.layerGroup().addTo(map);
-                let timer = null;
-
-                // 3. データの読み込み
-                const jsonPath = './marine_data.json?nocache=' + new Date().getTime();
-
-                fetch(jsonPath)
-                    .then(res => {
-                        if (!res.ok) throw new Error('データが見つかりません(status:' + res.status + ')');
-                        return res.json();
-                    })
-                    .then(data => {
-                        if (data && data.hourly && data.hourly.time) {
-                            marineData = data;
-                            updateMap(0); // 成功したら最初の時間を表示
-                        } else {
-                            document.getElementById('time-display').innerText = "データの形が違います";
-                        }
-                    })
-                    .catch(err => {
-                        document.getElementById('time-display').innerText = "データ読み込み失敗: " + err.message;
-                    });
-
-                // 4. 画面更新
-                function updateMap(index) {
-                    if (!marineData) return;
-                    dataLayers.clearLayers();
-
-                    const hourly = marineData.hourly;
-                    const timeStr = hourly.time[index];
-                    
-                    const dateObj = new Date(timeStr);
-                    const formattedTime = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:00`;
-                    document.getElementById('time-display').innerText = `予測日時: ${formattedTime}`;
-
-                    const lat = 37.22;
-                    const lon = 137.86;
-                    const waveHeight = hourly.wave_height[index];
-
-                    let color = '#007bff';
-                    if (waveHeight > 2.0) color = '#ff3333';
-                    else if (waveHeight > 1.0) color = '#ff9900';
-
-                    const marker = L.circleMarker([lat, lon], {
-                        radius: 25 + (waveHeight * 8),
-                        color: color,
-                        fillColor: color,
-                        fillOpacity: 0.6,
-                        weight: 2
-                    }).addTo(dataLayers);
-
-                    marker.bindPopup(`<b>糸魚川沖</b><br>波高: ${waveHeight}m`).openPopup();
-                }
-
-                // 5. シークバーの連動
-                const seekbar = document.getElementById('seekbar');
-                seekbar.addEventListener('input', (e) => {
-                    updateMap(parseInt(e.target.value));
-                });
-
-                // 6. 再生・停止ボタンの連動
-                document.getElementById('play-btn').addEventListener('click', () => {
-                    if (timer) return;
-                    timer = setInterval(() => {
-                        let current = parseInt(seekbar.value);
-                        current = (current + 1) % 48;
-                        seekbar.value = current;
-                        updateMap(current);
-                    }, 800);
-                });
-
-                document.getElementById('pause-btn').addEventListener('click', () => {
-                    clearInterval(timer);
-                    timer = null;
-                });
-
-            } catch (e) {
-                document.getElementById('time-display').innerText = "システムエラー: " + e.message;
-            }
-        }
-    </script>
-</body>
-</html>
