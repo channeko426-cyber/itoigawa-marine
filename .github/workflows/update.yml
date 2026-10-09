@@ -30,7 +30,8 @@ jobs:
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git commit -am "最新の気象データに更新" || exit 0
+        git add -A  # ◀ 【ここを修正】新しくできたファイルをすべて強制登録します
+        git commit -m "最新の気象データに更新" || exit 0
         git push
 
   deploy:
