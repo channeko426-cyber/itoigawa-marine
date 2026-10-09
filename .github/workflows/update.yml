@@ -2,8 +2,8 @@ name: 1時間おきのデータ自動更新
 
 on:
   schedule:
-    - cron: '0 * * * *' # 毎時0分に自動実行
-  workflow_dispatch: # 手動でいつでも動かせるボタンをつける
+    - cron: '0 * * * *' # 毎時0分に完全自動実行
+  workflow_dispatch: # 手動でいつでも動かせるボタン
 
 jobs:
   update-data:
@@ -18,7 +18,7 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: ライブラリの強制インストール
+    - name: 工具箱のインストール
       run: |
         python -m pip install --upgrade pip
         pip install requests
@@ -26,11 +26,11 @@ jobs:
     - name: データ取得スクリプトの実行
       run: python get_data.py
 
-    - name: 更新されたデータを保存して公開
+    - name: 更新されたデータを倉庫に保存
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add -A  # ◀ 【ここを修正】新しくできたファイルをすべて強制登録します
+        git add marine_data.json
         git commit -m "最新の気象データに更新" || exit 0
         git push
 
@@ -52,6 +52,6 @@ jobs:
       uses: actions/upload-pages-artifact@v3
       with:
         path: '.'
-    - name: スマホへ直接配信開始
+    - name: スマホへ最新データを直接配信
       id: deployment
       uses: actions/deploy-pages@v4
