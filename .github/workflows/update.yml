@@ -30,3 +30,26 @@ jobs:
         git config --local user.name "GitHub Action"
         git commit -am "最新の気象データに更新" || exit 0
         git push
+
+  # 🌐 【ここを追加】スマホの画面に最新のデータを直接配信する命令
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: update-data
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+    - name: コードをチェックアウト
+      uses: actions/checkout@v4
+    - name: ホームページ用にデータを梱包
+      uses: actions/configure-pages@v4
+    - name: アップロード
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: '.'
+    - name: スマホへ直接配信開始
+      id: deployment
+      uses: actions/deploy-pages@v4
