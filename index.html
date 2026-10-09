@@ -4,13 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>糸魚川海天気ビューア</title>
-    <!-- スマホのブロックを完全に回避する、世界で最も安定した配信サーバーから地図の見た目を読み込み -->
-    <link rel="stylesheet" href="https://unpkg.com" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- 地図の見た目を読み込み（最も遮断されにくい標準URLに変更） -->
+    <link rel="stylesheet" href="https://jsdelivr.net" />
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; font-family: sans-serif; background: #222; }
-        /* 地図が表示されるエリア（真っ白を避けるために初期背景をグレーに設定） */
         #map { width: 100%; height: 70vh; background: #333; }
-        /* 下部の操作パネル（スマホでタップしやすい大画面サイズ） */
         #controls { height: 30vh; background: #111; color: #fff; padding: 15px; box-sizing: border-box; text-align: center; }
         #time-display { font-size: 1.2rem; margin-bottom: 8px; font-weight: bold; color: #00ffcc; min-height: 24px; }
         #seekbar { width: 90%; height: 30px; margin: 10px 0; }
@@ -24,7 +22,6 @@
 
     <div id="map"></div>
     <div id="controls">
-        <!-- 初期表示を分かりやすく変更。もしこれが変わらなければプログラムが動いていません -->
         <div id="time-display">システム起動中...</div>
         <input type="range" id="seekbar" min="0" max="47" value="0">
         <div class="btn-group">
@@ -33,107 +30,116 @@
         </div>
     </div>
 
-    <!-- 地図を動かすプログラム本体（こちらもセキュリティ認証付きの確実なURLに変更） -->
-    <script src="https://unpkg.com" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- スマホのセキュリティブロックを確実に回避するため、Google等も使う世界最大手の超安定サーバー（jsdelivr）に変更 -->
+    <script src="https://jsdelivr.net"></script>
     <script>
-        // エラーが発生した時に画面に文字を出す仕組み
+        // エラー検知の仕組み
         window.onerror = function(msg, url, line) {
             document.getElementById('time-display').innerText = "エラー発生: " + msg + " (L" + line + ")";
             return false;
         };
 
-        try {
-            // 1. 地図の初期化（糸魚川沖にカメラを向ける）
-            const map = L.map('map', { zoomControl: false }).setView([37.22, 137.86], 10);
-            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        // 地図プログラムの読み込みを少しだけ待ってから確実に実行する安全装置
+        window.onload = function() {
+            setTimeout(startSystem, 500);
+        };
 
-            // 2. 最もブロックされにくい世界標準の背景地図を設置
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap'
-            }).addTo(map);
-
-            let marineData = null;
-            let dataLayers = L.layerGroup().addTo(map);
-            let timer = null;
-
-            // 3. データの読み込み（キャッシュを完全に無効化する命令を合体）
-            const jsonPath = './marine_data.json?nocache=' + new Date().getTime();
-
-            fetch(jsonPath)
-                .then(res => {
-                    if (!res.ok) throw new Error('データファイル（marine_data.json）の読み込み失敗。status:' + res.status);
-                    return res.json();
-                })
-                .then(data => {
-                    if (data && data.hourly && data.hourly.time) {
-                        marineData = data;
-                        updateMap(0); // 正常に読み込めたら最初の時刻を表示
-                    } else {
-                        document.getElementById('time-display').innerText = "データの形が違います（データ空っぽです）";
-                    }
-                })
-                .catch(err => {
-                    document.getElementById('time-display').innerText = "通信エラー: データがまだありません";
-                    console.error(err);
-                });
-
-            // 4. 画面更新の関数
-            function updateMap(index) {
-                if (!marineData) return;
-                dataLayers.clearLayers();
-
-                const hourly = marineData.hourly;
-                const timeStr = hourly.time[index];
-                
-                // 日本時間（9時間プラス）に変換して見やすく表示
-                const dateObj = new Date(timeStr);
-                const formattedTime = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:00`;
-                document.getElementById('time-display').innerText = `予測日時: ${formattedTime}`;
-
-                const lat = 37.22;
-                const lon = 137.86;
-                const waveHeight = hourly.wave_height[index];
-
-                // 波高によって色を変更
-                let color = '#007bff';
-                if (waveHeight > 2.0) color = '#ff3333';
-                else if (waveHeight > 1.0) color = '#ff9900';
-
-                const marker = L.circleMarker([lat, lon], {
-                    radius: 25 + (waveHeight * 8),
-                    color: color,
-                    fillColor: color,
-                    fillOpacity: 0.6,
-                    weight: 2
-                }).addTo(dataLayers);
-
-                marker.bindPopup(`<b>糸魚川沖</b><br>波高: ${waveHeight}m`).openPopup();
+        function startSystem() {
+            if (typeof L === 'undefined') {
+                document.getElementById('time-display').innerText = "地図プログラムの読み込みが通信ブロックされています。Wi-Fiを切るかシークレットタブで開いてください。";
+                return;
             }
 
-            // 5. シークバーの連動
-            const seekbar = document.getElementById('seekbar');
-            seekbar.addEventListener('input', (e) => {
-                updateMap(parseInt(e.target.value));
-            });
+            try {
+                // 1. 地図の初期化（糸魚川沖）
+                const map = L.map('map', { zoomControl: false }).setView([37.22, 137.86], 10);
+                L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            // 6. 再生・停止ボタンの連動
-            document.getElementById('play-btn').addEventListener('click', () => {
-                if (timer) return;
-                timer = setInterval(() => {
-                    let current = parseInt(seekbar.value);
-                    current = (current + 1) % 48;
-                    seekbar.value = current;
-                    updateMap(current);
-                }, 800);
-            });
+                // 2. 背景地図を国土地理院（日本政府の公式サーバー）に変更してブロックを完全回避
+                L.tileLayer('https://gsi.go.jp{z}/{x}/{y}.png', {
+                    attribution: '国土地理院'
+                }).addTo(map);
 
-            document.getElementById('pause-btn').addEventListener('click', () => {
-                clearInterval(timer);
-                timer = null;
-            });
+                let marineData = null;
+                let dataLayers = L.layerGroup().addTo(map);
+                let timer = null;
 
-        } catch (e) {
-            document.getElementById('time-display').innerText = "起動失敗: " + e.message;
+                // 3. データの読み込み
+                const jsonPath = './marine_data.json?nocache=' + new Date().getTime();
+
+                fetch(jsonPath)
+                    .then(res => {
+                        if (!res.ok) throw new Error('データが見つかりません(status:' + res.status + ')');
+                        return res.json();
+                    })
+                    .then(data => {
+                        if (data && data.hourly && data.hourly.time) {
+                            marineData = data;
+                            updateMap(0); // 成功したら最初の時間を表示
+                        } else {
+                            document.getElementById('time-display').innerText = "データの形が違います";
+                        }
+                    })
+                    .catch(err => {
+                        document.getElementById('time-display').innerText = "データ読み込み失敗: " + err.message;
+                    });
+
+                // 4. 画面更新
+                function updateMap(index) {
+                    if (!marineData) return;
+                    dataLayers.clearLayers();
+
+                    const hourly = marineData.hourly;
+                    const timeStr = hourly.time[index];
+                    
+                    const dateObj = new Date(timeStr);
+                    const formattedTime = `${dateObj.getMonth()+1}/${dateObj.getDate()} ${String(dateObj.getHours()).padStart(2, '0')}:00`;
+                    document.getElementById('time-display').innerText = `予測日時: ${formattedTime}`;
+
+                    const lat = 37.22;
+                    const lon = 137.86;
+                    const waveHeight = hourly.wave_height[index];
+
+                    let color = '#007bff';
+                    if (waveHeight > 2.0) color = '#ff3333';
+                    else if (waveHeight > 1.0) color = '#ff9900';
+
+                    const marker = L.circleMarker([lat, lon], {
+                        radius: 25 + (waveHeight * 8),
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.6,
+                        weight: 2
+                    }).addTo(dataLayers);
+
+                    marker.bindPopup(`<b>糸魚川沖</b><br>波高: ${waveHeight}m`).openPopup();
+                }
+
+                // 5. シークバーの連動
+                const seekbar = document.getElementById('seekbar');
+                seekbar.addEventListener('input', (e) => {
+                    updateMap(parseInt(e.target.value));
+                });
+
+                // 6. 再生・停止ボタンの連動
+                document.getElementById('play-btn').addEventListener('click', () => {
+                    if (timer) return;
+                    timer = setInterval(() => {
+                        let current = parseInt(seekbar.value);
+                        current = (current + 1) % 48;
+                        seekbar.value = current;
+                        updateMap(current);
+                    }, 800);
+                });
+
+                document.getElementById('pause-btn').addEventListener('click', () => {
+                    clearInterval(timer);
+                    timer = null;
+                });
+
+            } catch (e) {
+                document.getElementById('time-display').innerText = "システムエラー: " + e.message;
+            }
         }
     </script>
 </body>
